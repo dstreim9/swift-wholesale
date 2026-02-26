@@ -1,72 +1,144 @@
 import { create } from "zustand";
-import type { ShopifyProduct } from "@/services/shopifyService";
+import { persist, createJSONStorage } from "zustand/middleware";
+import {
+  type CartItem,
+  type ShopifyProduct,
+  createShopifyCart,
+  addLineToShopifyCart,
+  updateShopifyCartLine,
+  removeLineFromShopifyCart,
+  syncShopifyCart,
+} from "@/lib/shopify";
 
-export interface CartItem {
-  product: ShopifyProduct;
-  quantity: number;
-}
+export type { CartItem };
 
 interface CartStore {
   items: CartItem[];
-  isOpen: boolean;
-  addItem: (product: ShopifyProduct, quantity: number) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  cartId: string | null;
+  checkoutUrl: string | null;
+  isLoading: boolean;
+  isSyncing: boolean;
+  addItem: (item: Omit<CartItem, "lineId">) => Promise<void>;
+  updateQuantity: (variantId: string, quantity: number) => Promise<void>;
+  removeItem: (variantId: string) => Promise<void>;
   clearCart: () => void;
-  toggleCart: () => void;
-  setCartOpen: (open: boolean) => void;
+  syncCart: () => Promise<void>;
+  getCheckoutUrl: () => string | null;
   totalPrice: () => number;
   totalItems: () => number;
 }
 
-export const useCartStore = create<CartStore>((set, get) => ({
-  items: [],
-  isOpen: false,
+export const useCartStore = create<CartStore>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      cartId: null,
+      checkoutUrl: null,
+      isLoading: false,
+      isSyncing: false,
 
-  addItem: (product, quantity) => {
-    set((state) => {
-      const existing = state.items.find((i) => i.product.id === product.id);
-      if (existing) {
-        return {
-          items: state.items.map((i) =>
-            i.product.id === product.id
-              ? { ...i, quantity: i.quantity + quantity }
-              : i
-          ),
-        };
-      }
-      return { items: [...state.items, { product, quantity }] };
-    });
-  },
+      addItem: async (item) => {
+        const { items, cartId, clearCart } = get();
+        const existingItem = items.find((i) => i.variantId === item.variantId);
 
-  removeItem: (productId) => {
-    set((state) => ({
-      items: state.items.filter((i) => i.product.id !== productId),
-    }));
-  },
+        set({ isLoading: true });
+        try {
+          if (!cartId) {
+            const result = await createShopifyCart({ ...item, lineId: null });
+            if (result) {
+              set({
+                cartId: result.cartId,
+                checkoutUrl: result.checkoutUrl,
+                items: [{ ...item, lineId: result.lineId }],
+              });
+            }
+          } else if (existingItem) {
+            const newQuantity = existingItem.quantity + item.quantity;
+            if (!existingItem.lineId) return;
+            const result = await updateShopifyCartLine(cartId, existingItem.lineId, newQuantity);
+            if (result.success) {
+              set({ items: get().items.map((i) => (i.variantId === item.variantId ? { ...i, quantity: newQuantity } : i)) });
+            } else if (result.cartNotFound) {
+              clearCart();
+            }
+          } else {
+            const result = await addLineToShopifyCart(cartId, { ...item, lineId: null });
+            if (result.success) {
+              set({ items: [...get().items, { ...item, lineId: result.lineId ?? null }] });
+            } else if (result.cartNotFound) {
+              clearCart();
+            }
+          }
+        } catch (error) {
+          console.error("Failed to add item:", error);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
 
-  updateQuantity: (productId, quantity) => {
-    if (quantity <= 0) {
-      get().removeItem(productId);
-      return;
+      updateQuantity: async (variantId, quantity) => {
+        if (quantity <= 0) {
+          await get().removeItem(variantId);
+          return;
+        }
+        const { items, cartId, clearCart } = get();
+        const item = items.find((i) => i.variantId === variantId);
+        if (!item?.lineId || !cartId) return;
+
+        set({ isLoading: true });
+        try {
+          const result = await updateShopifyCartLine(cartId, item.lineId, quantity);
+          if (result.success) {
+            set({ items: get().items.map((i) => (i.variantId === variantId ? { ...i, quantity } : i)) });
+          } else if (result.cartNotFound) {
+            clearCart();
+          }
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      removeItem: async (variantId) => {
+        const { items, cartId, clearCart } = get();
+        const item = items.find((i) => i.variantId === variantId);
+        if (!item?.lineId || !cartId) return;
+
+        set({ isLoading: true });
+        try {
+          const result = await removeLineFromShopifyCart(cartId, item.lineId);
+          if (result.success) {
+            const newItems = get().items.filter((i) => i.variantId !== variantId);
+            newItems.length === 0 ? clearCart() : set({ items: newItems });
+          } else if (result.cartNotFound) {
+            clearCart();
+          }
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      clearCart: () => set({ items: [], cartId: null, checkoutUrl: null }),
+      getCheckoutUrl: () => get().checkoutUrl,
+
+      totalPrice: () => get().items.reduce((sum, item) => sum + parseFloat(item.price.amount) * item.quantity, 0),
+      totalItems: () => get().items.reduce((sum, item) => sum + item.quantity, 0),
+
+      syncCart: async () => {
+        const { cartId, isSyncing, clearCart } = get();
+        if (!cartId || isSyncing) return;
+        set({ isSyncing: true });
+        try {
+          const hasItems = await syncShopifyCart(cartId);
+          if (!hasItems) clearCart();
+        } finally {
+          set({ isSyncing: false });
+        }
+      },
+    }),
+    {
+      name: "shopify-cart",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ items: state.items, cartId: state.cartId, checkoutUrl: state.checkoutUrl }),
     }
-    set((state) => ({
-      items: state.items.map((i) =>
-        i.product.id === productId ? { ...i, quantity } : i
-      ),
-    }));
-  },
-
-  clearCart: () => set({ items: [] }),
-  toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
-  setCartOpen: (open) => set({ isOpen: open }),
-
-  totalPrice: () =>
-    get().items.reduce(
-      (sum, item) => sum + item.product.wholesalePrice * item.quantity,
-      0
-    ),
-
-  totalItems: () =>
-    get().items.reduce((sum, item) => sum + item.quantity, 0),
-}));
+  )
+);
