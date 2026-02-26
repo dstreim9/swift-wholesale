@@ -1,20 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { fetchShopifyProducts, type ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
-import { Search, Plus, Minus, ShoppingCart, Loader2, ChevronDown, ChevronRight, Package, TrendingUp, AlertTriangle } from "lucide-react";
+import { Search, Plus, Minus, ShoppingCart, Loader2, Package, TrendingUp, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
-const formatPrice = (amount: string | number) => parseFloat(String(amount)).toFixed(2);
+const fmt = (n: string | number) => parseFloat(String(n)).toFixed(2);
 
 const DashboardPage = () => {
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const { addItem, isLoading: cartLoading } = useCartStore();
   const { toast } = useToast();
 
@@ -33,16 +32,9 @@ const DashboardPage = () => {
     [products, search]
   );
 
-  const updateQty = (id: string, delta: number) => {
-    setQuantities((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] || 0) + delta) }));
-  };
-
-  const setQty = (id: string, val: number) => {
-    setQuantities((prev) => ({ ...prev, [id]: Math.max(0, val) }));
-  };
-
-  const toggleExpand = (productId: string) => {
-    setExpanded((prev) => ({ ...prev, [productId]: !prev[productId] }));
+  const setQty = (id: string, val: number, max?: number | null) => {
+    const clamped = max != null ? Math.min(Math.max(0, val), max) : Math.max(0, val);
+    setQuantities((prev) => ({ ...prev, [id]: clamped }));
   };
 
   const selectedItems = Object.entries(quantities).filter(([, qty]) => qty > 0);
@@ -118,185 +110,158 @@ const DashboardPage = () => {
         {filtered.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">Geen producten gevonden</div>
         ) : (
-          <div className="bg-card border overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="text-left text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-3 w-[30%]">Product / Maat</th>
-                  <th className="text-right text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-3">Inkoopprijs</th>
-                  <th className="text-right text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-3">Adviesprijs</th>
-                  <th className="text-right text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-3">Marge</th>
-                  <th className="text-center text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-3">Status</th>
-                  <th className="text-center text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-3 w-[150px]">Aantal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((product) => {
-                  const variants = product.node.variants.edges;
-                  const hasMultipleVariants = variants.length > 1;
-                  const isExpanded = expanded[product.node.id] ?? false;
-                  const imageUrl = product.node.images.edges[0]?.node.url;
-                  const anyAvailable = variants.some(v => v.node.availableForSale);
-                  const selectedVariantCount = variants.filter(v => (quantities[v.node.id] || 0) > 0).length;
+          <div className="space-y-4">
+            {filtered.map((product) => {
+              const variants = product.node.variants.edges;
+              const imageUrl = product.node.images.edges[0]?.node.url;
+              const anyAvailable = variants.some(v => v.node.availableForSale);
+              const selectedCount = variants.filter(v => (quantities[v.node.id] || 0) > 0).length;
+              const totalQty = variants.reduce((s, v) => s + (quantities[v.node.id] || 0), 0);
 
-                  return (
-                    <tbody key={product.node.id}>
-                      {/* Product header row */}
-                      <tr
-                        className={`border-b transition-colors cursor-pointer hover:bg-muted/30 ${!anyAvailable ? "opacity-50" : ""}`}
-                        onClick={() => hasMultipleVariants && toggleExpand(product.node.id)}
-                      >
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            {hasMultipleVariants && (
-                              <span className="text-muted-foreground">
-                                {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                              </span>
-                            )}
-                            <div className="w-10 h-10 bg-muted flex-shrink-0 overflow-hidden">
-                              {imageUrl ? (
-                                <img src={imageUrl} alt={product.node.title} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <Package className="w-4 h-4 text-muted-foreground" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <span className="font-medium text-sm text-foreground block truncate">{product.node.title}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {hasMultipleVariants
-                                  ? `${variants.length} maten`
-                                  : variants[0]?.node.title !== "Default Title" ? variants[0]?.node.title : ""}
-                              </span>
-                            </div>
-                            {selectedVariantCount > 0 && (
-                              <Badge variant="secondary" className="ml-auto text-xs font-mono">
-                                {selectedVariantCount} geselecteerd
-                              </Badge>
-                            )}
-                          </div>
-                        </td>
-                        {/* Show first variant info in collapsed state for single-variant products */}
-                        {!hasMultipleVariants ? (
-                          <>
-                            {(() => {
-                              const v = variants[0]?.node;
-                              if (!v) return <td colSpan={5} />;
-                              const inkoop = parseFloat(v.price.amount);
-                              const verkoop = v.compareAtPrice ? parseFloat(v.compareAtPrice.amount) : null;
-                              const marge = verkoop ? ((verkoop - inkoop) / verkoop * 100) : null;
-                              return (
-                                <>
-                                  <td className="px-4 py-3 text-right">
-                                    <span className="text-sm font-semibold text-foreground">€{formatPrice(inkoop)}</span>
-                                  </td>
-                                  <td className="px-4 py-3 text-right">
-                                    {verkoop ? <span className="text-sm text-muted-foreground">€{formatPrice(verkoop)}</span> : <span className="text-xs text-muted-foreground">—</span>}
-                                  </td>
-                                  <td className="px-4 py-3 text-right">
-                                    {marge !== null ? (
-                                      <Badge variant="outline" className={`font-mono text-xs ${marge >= 40 ? "border-success/30 text-success" : marge >= 20 ? "border-warning/30 text-warning" : "border-destructive/30 text-destructive"}`}>
-                                        {marge.toFixed(0)}%
-                                      </Badge>
-                                    ) : <span className="text-xs text-muted-foreground">—</span>}
-                                  </td>
-                                  <td className="px-4 py-3 text-center">
-                                    {v.availableForSale ? (
-                                      <Badge variant="outline" className="text-[10px] font-semibold border-success/30 text-success">Op voorraad</Badge>
-                                    ) : (
-                                      <Badge variant="destructive" className="text-[10px] font-semibold text-uppercase-tracking">Uitverkocht</Badge>
-                                    )}
-                                  </td>
-                                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                                    {v.availableForSale ? (
-                                      <div className="flex items-center justify-center gap-1">
-                                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(v.id, -1)} disabled={(quantities[v.id] || 0) === 0}>
-                                          <Minus className="w-3 h-3" />
-                                        </Button>
-                                        <Input type="number" min={0} value={quantities[v.id] || 0} onChange={(e) => setQty(v.id, parseInt(e.target.value) || 0)} className="w-14 h-7 text-center text-sm font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(v.id, 1)}>
-                                          <Plus className="w-3 h-3" />
-                                        </Button>
-                                      </div>
-                                    ) : <span className="text-xs text-muted-foreground text-center block">—</span>}
-                                  </td>
-                                </>
-                              );
-                            })()}
-                          </>
-                        ) : (
-                          <>
-                            <td colSpan={4} className="px-4 py-3 text-right text-xs text-muted-foreground">
-                              Klik om maten te tonen
-                            </td>
-                            <td className="px-4 py-3" />
-                          </>
-                        )}
+              return (
+                <div key={product.node.id} className={`bg-card border overflow-hidden ${!anyAvailable ? "opacity-50" : ""}`}>
+                  {/* Product header */}
+                  <div className="flex items-center gap-4 px-5 py-4 border-b bg-muted/20">
+                    <div className="w-12 h-12 bg-muted flex-shrink-0 overflow-hidden">
+                      {imageUrl ? (
+                        <img src={imageUrl} alt={product.node.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-sm text-foreground truncate">{product.node.title}</h3>
+                      <p className="text-xs text-muted-foreground">{variants.length} {variants.length === 1 ? "variant" : "maten"}</p>
+                    </div>
+                    {selectedCount > 0 && (
+                      <Badge variant="secondary" className="font-mono text-xs">
+                        {totalQty} stuks in {selectedCount} {selectedCount === 1 ? "maat" : "maten"}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Size grid */}
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b bg-muted/30">
+                        <th className="text-left text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-5 py-2 w-[25%]">Maat</th>
+                        <th className="text-right text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-2">Inkoopprijs</th>
+                        <th className="text-right text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-2">Adviesprijs</th>
+                        <th className="text-right text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-2">Marge</th>
+                        <th className="text-center text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-2">Voorraad</th>
+                        <th className="text-center text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-2 w-[150px]">Aantal</th>
                       </tr>
-
-                      {/* Expanded variant rows */}
-                      {hasMultipleVariants && isExpanded && variants.map(({ node: v }) => {
+                    </thead>
+                    <tbody>
+                      {variants.map(({ node: v }) => {
                         const inkoop = parseFloat(v.price.amount);
                         const verkoop = v.compareAtPrice ? parseFloat(v.compareAtPrice.amount) : null;
                         const marge = verkoop ? ((verkoop - inkoop) / verkoop * 100) : null;
                         const qty = quantities[v.id] || 0;
+                        const stock = v.quantityAvailable;
+                        const hasStock = stock != null;
+                        const isAvailable = v.availableForSale;
+                        const sizeLabel = v.selectedOptions.map(o => o.value).join(" / ");
 
                         return (
                           <tr
                             key={v.id}
                             className={`border-b last:border-b-0 transition-colors ${
-                              v.availableForSale ? "hover:bg-muted/20" : "opacity-40"
-                            } ${qty > 0 ? "bg-primary/[0.03]" : ""} bg-muted/5`}
+                              isAvailable ? "hover:bg-muted/20" : "opacity-40 bg-muted/5"
+                            } ${qty > 0 ? "bg-primary/[0.03]" : ""}`}
                           >
-                            <td className="px-4 py-2.5 pl-16">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs font-medium">
-                                  {v.selectedOptions.map(o => o.value).join(" / ")}
-                                </Badge>
-                              </div>
+                            <td className="px-5 py-2.5">
+                              <Badge variant={isAvailable ? "outline" : "secondary"} className="text-xs font-medium">
+                                {sizeLabel || v.title}
+                              </Badge>
                             </td>
                             <td className="px-4 py-2.5 text-right">
-                              <span className="text-sm font-semibold text-foreground">€{formatPrice(inkoop)}</span>
+                              <span className="text-sm font-semibold text-foreground">€{fmt(inkoop)}</span>
                             </td>
                             <td className="px-4 py-2.5 text-right">
-                              {verkoop ? <span className="text-sm text-muted-foreground">€{formatPrice(verkoop)}</span> : <span className="text-xs text-muted-foreground">—</span>}
+                              {verkoop ? (
+                                <span className="text-sm text-muted-foreground">€{fmt(verkoop)}</span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
                             </td>
                             <td className="px-4 py-2.5 text-right">
                               {marge !== null ? (
-                                <Badge variant="outline" className={`font-mono text-xs ${marge >= 40 ? "border-success/30 text-success" : marge >= 20 ? "border-warning/30 text-warning" : "border-destructive/30 text-destructive"}`}>
+                                <Badge
+                                  variant="outline"
+                                  className={`font-mono text-xs ${
+                                    marge >= 40 ? "border-success/30 text-success"
+                                    : marge >= 20 ? "border-warning/30 text-warning"
+                                    : "border-destructive/30 text-destructive"
+                                  }`}
+                                >
                                   {marge.toFixed(0)}%
                                 </Badge>
-                              ) : <span className="text-xs text-muted-foreground">—</span>}
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
                             </td>
                             <td className="px-4 py-2.5 text-center">
-                              {v.availableForSale ? (
-                                <Badge variant="outline" className="text-[10px] font-semibold border-success/30 text-success">Op voorraad</Badge>
+                              {!isAvailable ? (
+                                <Badge variant="destructive" className="text-[10px] font-semibold text-uppercase-tracking">
+                                  Uitverkocht
+                                </Badge>
+                              ) : hasStock ? (
+                                <span className={`text-sm font-mono font-medium ${
+                                  stock <= 5 ? "text-warning" : "text-foreground"
+                                }`}>
+                                  {stock}
+                                </span>
                               ) : (
-                                <Badge variant="destructive" className="text-[10px] font-semibold text-uppercase-tracking">Uitverkocht</Badge>
+                                <Badge variant="outline" className="text-[10px] border-success/30 text-success">
+                                  Op voorraad
+                                </Badge>
                               )}
                             </td>
                             <td className="px-4 py-2.5">
-                              {v.availableForSale ? (
+                              {isAvailable ? (
                                 <div className="flex items-center justify-center gap-1">
-                                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(v.id, -1)} disabled={qty === 0}>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => setQty(v.id, qty - 1, hasStock ? stock : null)}
+                                    disabled={qty === 0}
+                                  >
                                     <Minus className="w-3 h-3" />
                                   </Button>
-                                  <Input type="number" min={0} value={qty} onChange={(e) => setQty(v.id, parseInt(e.target.value) || 0)} className="w-14 h-7 text-center text-sm font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(v.id, 1)}>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    max={hasStock ? stock : undefined}
+                                    value={qty}
+                                    onChange={(e) => setQty(v.id, parseInt(e.target.value) || 0, hasStock ? stock : null)}
+                                    className="w-14 h-7 text-center text-sm font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => setQty(v.id, qty + 1, hasStock ? stock : null)}
+                                    disabled={hasStock && qty >= stock}
+                                  >
                                     <Plus className="w-3 h-3" />
                                   </Button>
                                 </div>
-                              ) : <span className="text-xs text-muted-foreground text-center block">—</span>}
+                              ) : (
+                                <span className="text-xs text-muted-foreground text-center block">—</span>
+                              )}
                             </td>
                           </tr>
                         );
                       })}
                     </tbody>
-                  );
-                })}
-              </tbody>
-            </table>
+                  </table>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
