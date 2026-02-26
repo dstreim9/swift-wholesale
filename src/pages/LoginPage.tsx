@@ -7,16 +7,30 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 const LoginPage = () => {
-  const [email, setEmail] = useState("demo@wholesale.nl");
-  const [password, setPassword] = useState("password");
-  const login = useAuthStore((s) => s.login);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { signIn, signUp } = useAuthStore();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = login(email, password);
-    if (success) {
+    setLoading(true);
+
+    const { error } = isSignUp ? await signUp(email, password) : await signIn(email, password);
+
+    setLoading(false);
+
+    if (error) {
+      toast({ title: "Fout", description: error, variant: "destructive" });
+      return;
+    }
+
+    if (isSignUp) {
+      toast({ title: "Account aangemaakt!", description: "Controleer je e-mail om je account te bevestigen." });
+    } else {
       toast({ title: "Welkom terug!", description: "Je bent succesvol ingelogd." });
       navigate("/dashboard");
     }
@@ -30,7 +44,9 @@ const LoginPage = () => {
             <Package className="w-7 h-7 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Wholesale Portal</h1>
-          <p className="text-muted-foreground mt-1">Log in op je B2B account</p>
+          <p className="text-muted-foreground mt-1">
+            {isSignUp ? "Maak een B2B account aan" : "Log in op je B2B account"}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card rounded-xl border p-6 shadow-sm space-y-4">
@@ -45,6 +61,7 @@ const LoginPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10"
                 placeholder="jouw@bedrijf.nl"
+                required
               />
             </div>
           </div>
@@ -60,17 +77,23 @@ const LoginPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10"
                 placeholder="••••••••"
+                required
+                minLength={6}
               />
             </div>
           </div>
 
-          <Button type="submit" className="w-full wholesale-gradient border-0">
-            Inloggen
+          <Button type="submit" className="w-full wholesale-gradient border-0" disabled={loading}>
+            {loading ? "Bezig..." : isSignUp ? "Account aanmaken" : "Inloggen"}
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground">
-            Demo modus — klik op Inloggen om verder te gaan
-          </p>
+          <button
+            type="button"
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="w-full text-sm text-center text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {isSignUp ? "Heb je al een account? Log in" : "Nog geen account? Registreer"}
+          </button>
         </form>
       </div>
     </div>
