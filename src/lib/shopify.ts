@@ -39,6 +39,7 @@ export interface ShopifyProduct {
             currencyCode: string;
           } | null;
           availableForSale: boolean;
+          quantityAvailable?: number | null;
           selectedOptions: Array<{
             name: string;
             value: string;
@@ -75,14 +76,14 @@ export async function storefrontApiRequest(query: string, variables: Record<stri
   }
 
   const data = await response.json();
-  if (data.errors) {
+  if (data.errors && !data.data) {
     throw new Error(`Shopify error: ${data.errors.map((e: { message: string }) => e.message).join(', ')}`);
   }
 
   return data;
 }
 
-const PRODUCTS_QUERY = `
+const PRODUCTS_QUERY_WITH_INVENTORY = `
   query GetProducts($first: Int!, $query: String) {
     products(first: $first, query: $query) {
       edges {
@@ -105,7 +106,62 @@ const PRODUCTS_QUERY = `
               }
             }
           }
-          variants(first: 10) {
+          variants(first: 50) {
+            edges {
+              node {
+                id
+                title
+                price {
+                  amount
+                  currencyCode
+                }
+                compareAtPrice {
+                  amount
+                  currencyCode
+                }
+                availableForSale
+                quantityAvailable
+                selectedOptions {
+                  name
+                  value
+                }
+              }
+            }
+          }
+          options {
+            name
+            values
+          }
+        }
+      }
+    }
+  }
+`;
+
+const PRODUCTS_QUERY_FALLBACK = `
+  query GetProducts($first: Int!, $query: String) {
+    products(first: $first, query: $query) {
+      edges {
+        node {
+          id
+          title
+          description
+          handle
+          priceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          images(first: 5) {
+            edges {
+              node {
+                url
+                altText
+              }
+            }
+          }
+          variants(first: 50) {
             edges {
               node {
                 id
@@ -137,8 +193,14 @@ const PRODUCTS_QUERY = `
 `;
 
 export async function fetchShopifyProducts(first = 50, query?: string): Promise<ShopifyProduct[]> {
-  const data = await storefrontApiRequest(PRODUCTS_QUERY, { first, query: query || null });
-  return data?.data?.products?.edges || [];
+  // Try with inventory first, fall back without
+  try {
+    const data = await storefrontApiRequest(PRODUCTS_QUERY_WITH_INVENTORY, { first, query: query || null });
+    return data?.data?.products?.edges || [];
+  } catch {
+    const data = await storefrontApiRequest(PRODUCTS_QUERY_FALLBACK, { first, query: query || null });
+    return data?.data?.products?.edges || [];
+  }
 }
 
 // Cart mutations
