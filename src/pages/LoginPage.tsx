@@ -19,20 +19,25 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = isSignUp ? await signUp(email, password) : await signIn(email, password);
+    try {
+      const { error } = isSignUp ? await signUp(email, password) : await signIn(email, password);
 
-    setLoading(false);
+      if (error) {
+        toast({ title: "Fout", description: error, variant: "destructive" });
+        return;
+      }
 
-    if (error) {
-      toast({ title: "Fout", description: error, variant: "destructive" });
-      return;
-    }
-
-    if (isSignUp) {
-      toast({ title: "Account aangemaakt!", description: "Controleer je e-mail om je account te bevestigen." });
-    } else {
-      toast({ title: "Welkom terug!", description: "Je bent succesvol ingelogd." });
-      navigate("/dashboard");
+      if (isSignUp) {
+        toast({ title: "Account aangemaakt!", description: "Controleer je e-mail om je account te bevestigen." });
+      } else {
+        toast({ title: "Welkom terug!", description: "Je bent succesvol ingelogd." });
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      toast({ title: "Fout", description: "Er ging iets mis bij het inloggen.", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
