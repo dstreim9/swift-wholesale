@@ -1,0 +1,60 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const SHOPIFY_STORE = "streim.myshopify.com";
+const API_VERSION = "2025-07";
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const token = Deno.env.get("SHOPIFY_ACCESS_TOKEN");
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Missing Shopify token" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Fetch all products with inventory from Admin API
+    const url = `https://${SHOPIFY_STORE}/admin/api/${API_VERSION}/products.json?limit=250&fields=id,variants`;
+    const res = await fetch(url, {
+      headers: { "X-Shopify-Access-Token": token },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      return new Response(JSON.stringify({ error: `Shopify API error: ${res.status}`, details: text }), {
+        status: res.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const data = await res.json();
+
+    // Build a map: variantId -> inventory_quantity
+    const inventory: Record<string, number> = {};
+    for (const product of data.products || []) {
+      for (const variant of product.variants || []) {
+        // Admin API uses numeric IDs, Storefront API uses GIDs
+        const gid = `gid://shopify/ProductVariant/${variant.id}`;
+        inventory[gid] = variant.inventory_quantity ?? 0;
+      }
+    }
+
+    return new Response(JSON.stringify({ inventory }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
