@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const SHOPIFY_STORE = "streim.myshopify.com";
@@ -22,7 +22,6 @@ serve(async (req) => {
       });
     }
 
-    // Fetch all products with inventory from Admin API
     const url = `https://${SHOPIFY_STORE}/admin/api/${API_VERSION}/products.json?limit=250&fields=id,variants`;
     const res = await fetch(url, {
       headers: { "X-Shopify-Access-Token": token },
@@ -38,11 +37,9 @@ serve(async (req) => {
 
     const data = await res.json();
 
-    // Build a map: variantId -> inventory_quantity
     const inventory: Record<string, number> = {};
     for (const product of data.products || []) {
       for (const variant of product.variants || []) {
-        // Admin API uses numeric IDs, Storefront API uses GIDs
         const gid = `gid://shopify/ProductVariant/${variant.id}`;
         inventory[gid] = variant.inventory_quantity ?? 0;
       }
