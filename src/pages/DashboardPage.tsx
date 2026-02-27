@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { fetchShopifyProducts, type ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
+import { supabase } from "@/integrations/supabase/client";
 import { Search, Plus, Minus, ShoppingCart, Loader2, Package, TrendingUp, AlertTriangle, ChevronDown, ChevronRight, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,21 +10,27 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const fmt = (n: string | number) => parseFloat(String(n)).toFixed(2);
-const DEFAULT_MAX_QTY = 50;
 
 const DashboardPage = () => {
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
+  const [inventory, setInventory] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [lightboxImg, setLightboxImg] = useState<{ url: string; alt: string } | null>(null);
-  const { addItem, isLoading: cartLoading } = useCartStore();
+  const { addItem, isLoading: cartLoading, items: cartItems } = useCartStore();
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchShopifyProducts(50)
-      .then(setProducts)
+    Promise.all([
+      fetchShopifyProducts(50),
+      supabase.functions.invoke("shopify-inventory").then(({ data }) => data?.inventory || {}),
+    ])
+      .then(([prods, inv]) => {
+        setProducts(prods);
+        setInventory(inv);
+      })
       .catch(() => toast({ title: "Fout", description: "Kon producten niet laden.", variant: "destructive" }))
       .finally(() => setLoading(false));
   }, []);
@@ -36,9 +43,17 @@ const DashboardPage = () => {
     [products, search]
   );
 
-  const getMax = (v: ShopifyProduct["node"]["variants"]["edges"][0]["node"]) => {
-    if (v.quantityAvailable != null) return v.quantityAvailable;
-    return DEFAULT_MAX_QTY;
+  const getStock = (variantId: string) => {
+    if (variantId in inventory) return inventory[variantId];
+    return null; // unknown
+  };
+
+  const getMax = (variantId: string) => {
+    const stock = getStock(variantId);
+    if (stock == null) return 999; // no inventory data
+    // Subtract what's already in the cart for this variant
+    const inCart = cartItems.find(i => i.variantId === variantId)?.quantity || 0;
+    return Math.max(0, stock - inCart);
   };
 
   const setQty = (id: string, val: number, max: number) => {
@@ -124,7 +139,10 @@ const DashboardPage = () => {
               const variants = product.node.variants.edges;
               const imageUrl = product.node.images.edges[0]?.node.url;
               const imageAlt = product.node.images.edges[0]?.node.altText || product.node.title;
-              const anyAvailable = variants.some(v => v.node.availableForSale);
+              const anyAvailable = variants.some(v => {
+                const stock = getStock(v.node.id);
+                return v.node.availableForSale && (stock == null || stock > 0);
+              });
               const isOpen = expanded[product.node.id] ?? false;
               const selectedCount = variants.filter(v => (quantities[v.node.id] || 0) > 0).length;
               const totalQty = variants.reduce((s, v) => s + (quantities[v.node.id] || 0), 0);
@@ -201,10 +219,10 @@ const DashboardPage = () => {
                             const verkoop = v.compareAtPrice ? parseFloat(v.compareAtPrice.amount) : null;
                             const marge = verkoop ? ((verkoop - vInkoop) / verkoop * 100) : null;
                             const qty = quantities[v.id] || 0;
-                            const stock = v.quantityAvailable;
+                            const stock = getStock(v.id);
                             const hasStock = stock != null;
-                            const isAvailable = v.availableForSale;
-                            const max = getMax(v);
+                            const isAvailable = v.availableForSale && (stock == null || stock > 0);
+                            const max = getMax(v.id);
                             const sizeLabel = v.selectedOptions.map(o => o.value).join(" / ");
 
                             return (
@@ -236,7 +254,7 @@ const DashboardPage = () => {
                                   {!isAvailable ? (
                                     <Badge variant="destructive" className="text-[10px] font-semibold text-uppercase-tracking">Uitverkocht</Badge>
                                   ) : hasStock ? (
-                                    <span className={`text-sm font-mono font-medium ${stock <= 5 ? "text-warning" : "text-foreground"}`}>{stock}</span>
+                                    <span className={`text-sm font-mono font-medium ${stock! <= 5 ? "text-warning" : "text-foreground"}`}>{stock}</span>
                                   ) : (
                                     <Badge variant="outline" className="text-[10px] border-success/30 text-success">Op voorraad</Badge>
                                   )}
