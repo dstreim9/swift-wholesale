@@ -23,16 +23,22 @@ const DashboardPage = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    Promise.all([
-      fetchShopifyProducts(50),
-      supabase.functions.invoke("shopify-inventory").then(({ data }) => data?.inventory || {}),
-    ])
-      .then(([prods, inv]) => {
+    const loadProducts = async () => {
+      try {
+        const prods = await fetchShopifyProducts(50);
         setProducts(prods);
-        setInventory(inv);
-      })
-      .catch(() => toast({ title: "Fout", description: "Kon producten niet laden.", variant: "destructive" }))
-      .finally(() => setLoading(false));
+      } catch {
+        toast({ title: "Fout", description: "Kon producten niet laden.", variant: "destructive" });
+      }
+      try {
+        const { data } = await supabase.functions.invoke("shopify-inventory");
+        if (data?.inventory) setInventory(data.inventory);
+      } catch {
+        console.warn("Inventory fetch failed, using defaults");
+      }
+      setLoading(false);
+    };
+    loadProducts();
   }, []);
 
   const filtered = useMemo(
