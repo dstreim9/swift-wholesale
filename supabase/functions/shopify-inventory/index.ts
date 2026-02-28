@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const SHOPIFY_STORE = "streim.myshopify.com";
-const API_VERSION = "2025-07";
+const API_VERSION = "2025-01";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -15,6 +15,8 @@ serve(async (req) => {
 
   try {
     const token = Deno.env.get("SHOPIFY_ACCESS_TOKEN");
+    console.log("Token prefix:", token ? token.substring(0, 10) + "..." : "MISSING");
+    console.log("Token length:", token?.length || 0);
     if (!token) {
       return new Response(JSON.stringify({ error: "Missing Shopify token" }), {
         status: 500,
