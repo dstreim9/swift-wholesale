@@ -137,69 +137,10 @@ const PRODUCTS_QUERY_WITH_INVENTORY = `
   }
 `;
 
-const PRODUCTS_QUERY_FALLBACK = `
-  query GetProducts($first: Int!, $query: String) {
-    products(first: $first, query: $query) {
-      edges {
-        node {
-          id
-          title
-          description
-          handle
-          priceRange {
-            minVariantPrice {
-              amount
-              currencyCode
-            }
-          }
-          images(first: 5) {
-            edges {
-              node {
-                url
-                altText
-              }
-            }
-          }
-          variants(first: 50) {
-            edges {
-              node {
-                id
-                title
-                price {
-                  amount
-                  currencyCode
-                }
-                compareAtPrice {
-                  amount
-                  currencyCode
-                }
-                availableForSale
-                selectedOptions {
-                  name
-                  value
-                }
-              }
-            }
-          }
-          options {
-            name
-            values
-          }
-        }
-      }
-    }
-  }
-`;
 
 export async function fetchShopifyProducts(first = 50, query?: string): Promise<ShopifyProduct[]> {
-  // Try with inventory first, fall back without
-  try {
-    const data = await storefrontApiRequest(PRODUCTS_QUERY_WITH_INVENTORY, { first, query: query || null });
-    return data?.data?.products?.edges || [];
-  } catch {
-    const data = await storefrontApiRequest(PRODUCTS_QUERY_FALLBACK, { first, query: query || null });
-    return data?.data?.products?.edges || [];
-  }
+  const data = await storefrontApiRequest(PRODUCTS_QUERY_WITH_INVENTORY, { first, query: query || null });
+  return data?.data?.products?.edges || [];
 }
 
 // Cart mutations
