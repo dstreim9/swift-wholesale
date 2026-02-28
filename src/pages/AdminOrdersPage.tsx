@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ChevronDown, ChevronUp, CheckCircle, Clock, Truck, XCircle, Package } from "lucide-react";
+import { Loader2, ChevronDown, ChevronUp, CheckCircle, Clock, Truck, XCircle, Package, FileText } from "lucide-react";
 
 const statusOptions = [
   { value: "pending", label: "In afwachting" },
@@ -26,6 +26,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.E
 };
 
 const AdminOrdersPage = () => {
+  const navigate = useNavigate();
   const { isAdmin, isLoading: authLoading } = useAuthStore();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,6 +156,19 @@ const AdminOrdersPage = () => {
                         <span className="text-muted-foreground">Klant opmerking:</span> {order.notes}
                       </div>
                     )}
+
+                    {/* Document buttons */}
+                    <div className="border-t pt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => navigate(`/admin/orders/${order.id}/documents`)}
+                      >
+                        <FileText className="w-4 h-4" />
+                        Documenten (Factuur / Order Confirmation)
+                      </Button>
+                    </div>
 
                     {/* Admin controls */}
                     <div className="border-t pt-3 space-y-3">

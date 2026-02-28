@@ -11,6 +11,7 @@ import DashboardPage from "./pages/DashboardPage";
 import OrdersPage from "./pages/OrdersPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
+import OrderDocumentPage from "./pages/OrderDocumentPage";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ function AppInner() {
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/admin/orders" element={<AdminOrdersPage />} />
+          <Route path="/admin/orders/:orderId/documents" element={<OrderDocumentPage />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

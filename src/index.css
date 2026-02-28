@@ -121,3 +121,39 @@
     letter-spacing: 0.1em;
   }
 }
+
+/* Print styles for order documents */
+@media print {
+  /* Hide everything except the document */
+  body > * {
+    visibility: hidden;
+  }
+
+  /* But show the print content */
+  .print\:visible,
+  [data-print-content] {
+    visibility: visible !important;
+  }
+
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide nav, header, toolbar */
+  header, nav, .print\:hidden {
+    display: none !important;
+  }
+
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 12mm 15mm;
+  }
+
+  /* Avoid breaking inside product cards */
+  .print\:break-inside-avoid {
+    break-inside: avoid;
+  }
+}
