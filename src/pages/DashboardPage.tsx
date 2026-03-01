@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { fetchShopifyProducts, type ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
-import { supabase } from "@/integrations/supabase/client";
 import { Search, Plus, Minus, ShoppingCart, Loader2, Package, TrendingUp, AlertTriangle, ChevronDown, ChevronRight, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,6 @@ const fmt = (n: string | number) => parseFloat(String(n)).toFixed(2);
 
 const DashboardPage = () => {
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
-  const [inventory, setInventory] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -30,12 +28,6 @@ const DashboardPage = () => {
       } catch {
         toast({ title: "Fout", description: "Kon producten niet laden.", variant: "destructive" });
       }
-      try {
-        const { data } = await supabase.functions.invoke("shopify-inventory");
-        if (data?.inventory) setInventory(data.inventory);
-      } catch {
-        console.warn("Inventory fetch failed, using defaults");
-      }
       setLoading(false);
     };
     loadProducts();
@@ -49,17 +41,9 @@ const DashboardPage = () => {
     [products, search]
   );
 
-  const getStock = (variantId: string) => {
-    if (variantId in inventory) return inventory[variantId];
-    return null; // unknown
-  };
-
-  const getMax = (variantId: string) => {
-    const stock = getStock(variantId);
-    if (stock == null) return 999; // no inventory data
-    // Subtract what's already in the cart for this variant
-    const inCart = cartItems.find(i => i.variantId === variantId)?.quantity || 0;
-    return Math.max(0, stock - inCart);
+  const getMax = (variantId: string, isAvailable: boolean) => {
+    if (!isAvailable) return 0;
+    return 999;
   };
 
   const setQty = (id: string, val: number, max: number) => {
@@ -148,10 +132,7 @@ const DashboardPage = () => {
               const variants = product.node.variants.edges;
               const imageUrl = product.node.images.edges[0]?.node.url;
               const imageAlt = product.node.images.edges[0]?.node.altText || product.node.title;
-              const anyAvailable = variants.some(v => {
-                const stock = getStock(v.node.id);
-                return v.node.availableForSale && (stock == null || stock > 0);
-              });
+              const anyAvailable = variants.some(v => v.node.availableForSale);
               const isOpen = expanded[product.node.id] ?? false;
               const selectedCount = variants.filter(v => (quantities[v.node.id] || 0) > 0).length;
               const totalQty = variants.reduce((s, v) => s + (quantities[v.node.id] || 0), 0);
@@ -228,10 +209,8 @@ const DashboardPage = () => {
                             const verkoop = v.compareAtPrice ? parseFloat(v.compareAtPrice.amount) : null;
                             const marge = verkoop ? ((verkoop - vInkoop) / verkoop * 100) : null;
                             const qty = quantities[v.id] || 0;
-                            const stock = getStock(v.id);
-                            const hasStock = stock != null;
-                            const isAvailable = v.availableForSale && (stock == null || stock > 0);
-                            const max = getMax(v.id);
+                            const isAvailable = v.availableForSale;
+                            const max = getMax(v.id, isAvailable);
                             const sizeLabel = v.selectedOptions.map(o => o.value).join(" / ");
 
                             return (
@@ -262,8 +241,6 @@ const DashboardPage = () => {
                                 <td className="px-4 py-2.5 text-center">
                                   {!isAvailable ? (
                                     <Badge variant="destructive" className="text-[10px] font-semibold text-uppercase-tracking">Uitverkocht</Badge>
-                                  ) : hasStock ? (
-                                    <span className={`text-sm font-mono font-medium ${stock! <= 5 ? "text-warning" : "text-foreground"}`}>{stock}</span>
                                   ) : (
                                     <Badge variant="outline" className="text-[10px] border-success/30 text-success">Op voorraad</Badge>
                                   )}
