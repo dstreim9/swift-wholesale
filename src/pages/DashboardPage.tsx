@@ -41,11 +41,12 @@ const DashboardPage = () => {
     [products, search]
   );
 
-  const getMax = (variantId: string, quantityAvailable: number | null | undefined, isAvailable: boolean) => {
+  const FALLBACK_MAX = 50;
+
+  const getMax = (variantId: string, isAvailable: boolean) => {
     if (!isAvailable) return 0;
-    const stock = quantityAvailable ?? 50; // fallback als geen data
     const inCart = cartItems.find(i => i.variantId === variantId)?.quantity || 0;
-    return Math.max(0, stock - inCart);
+    return Math.max(0, FALLBACK_MAX - inCart);
   };
 
   const setQty = (id: string, val: number, max: number) => {
@@ -211,10 +212,8 @@ const DashboardPage = () => {
                             const verkoop = v.compareAtPrice ? parseFloat(v.compareAtPrice.amount) : null;
                             const marge = verkoop ? ((verkoop - vInkoop) / verkoop * 100) : null;
                             const qty = quantities[v.id] || 0;
-                            const stock = v.quantityAvailable;
-                            const hasStock = stock != null;
                             const isAvailable = v.availableForSale;
-                            const max = getMax(v.id, stock, isAvailable);
+                            const max = getMax(v.id, isAvailable);
                             const sizeLabel = v.selectedOptions.map(o => o.value).join(" / ");
 
                             return (
@@ -245,10 +244,8 @@ const DashboardPage = () => {
                                 <td className="px-4 py-2.5 text-center">
                                   {!isAvailable ? (
                                     <Badge variant="destructive" className="text-[10px] font-semibold text-uppercase-tracking">Uitverkocht</Badge>
-                                  ) : hasStock ? (
-                                    <span className={`text-sm font-mono font-medium ${stock! <= 5 ? "text-warning" : "text-foreground"}`}>{stock}</span>
                                   ) : (
-                                    <Badge variant="outline" className="text-[10px] border-success/30 text-success">Op voorraad</Badge>
+                                    <span className="text-sm font-mono font-medium text-foreground">max {max}</span>
                                   )}
                                 </td>
                                 <td className="px-4 py-2.5">
