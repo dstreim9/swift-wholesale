@@ -120,6 +120,7 @@ const PRODUCTS_QUERY_WITH_INVENTORY = `
                   currencyCode
                 }
                 availableForSale
+                quantityAvailable
                 selectedOptions {
                   name
                   value
