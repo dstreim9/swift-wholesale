@@ -98,7 +98,7 @@ const DashboardPage = () => {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -106,39 +106,42 @@ const DashboardPage = () => {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
-      <div className="border-b bg-card px-6 py-5">
+      <div className="bg-white border-b border-[#e2e5ea] px-6 py-5 shadow-sm">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h1 className="text-xl font-bold text-foreground text-uppercase-tracking">Catalogus</h1>
-            <p className="text-sm text-muted-foreground mt-1">Bekijk prijzen, marges en voorraad per maat</p>
+            <h1 className="text-xl font-bold text-primary tracking-wide">Catalogus</h1>
+            <p className="text-sm text-[#888] mt-1">Bekijk prijzen, marges en voorraad per maat</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground border border-border px-3 py-1.5">
-              <Package className="w-3.5 h-3.5" />
-              <span className="font-medium text-foreground">{totalProducts}</span> producten
+            <div className="flex items-center gap-2 text-sm bg-[#f7f8fa] rounded-lg px-3 py-2">
+              <Package className="w-3.5 h-3.5 text-[#888]" />
+              <span className="font-bold text-foreground">{totalProducts}</span>
+              <span className="text-[#888]">producten</span>
             </div>
-            <div className="flex items-center gap-2 text-sm border border-border px-3 py-1.5 text-success">
+            <div className="flex items-center gap-2 text-sm bg-[#f0faf0] rounded-lg px-3 py-2 text-success">
               <TrendingUp className="w-3.5 h-3.5" />
-              <span className="font-medium">{inStock}</span> op voorraad
+              <span className="font-bold">{inStock}</span>
+              <span>op voorraad</span>
             </div>
             {outOfStock > 0 && (
-              <div className="flex items-center gap-2 text-sm border border-border px-3 py-1.5 text-destructive">
+              <div className="flex items-center gap-2 text-sm bg-red-50 rounded-lg px-3 py-2 text-destructive">
                 <AlertTriangle className="w-3.5 h-3.5" />
-                <span className="font-medium">{outOfStock}</span> uitverkocht
+                <span className="font-bold">{outOfStock}</span>
+                <span>uitverkocht</span>
               </div>
             )}
           </div>
         </div>
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Zoek op productnaam..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#888]" />
+          <Input placeholder="Zoek op productnaam..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 border-[#e2e5ea] rounded-lg bg-[#f7f8fa]" />
         </div>
       </div>
 
       {/* Product Cards */}
       <div className="flex-1 overflow-auto px-6 py-4">
         {filtered.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">Geen producten gevonden</div>
+          <div className="text-center py-12 text-[#888]">Geen producten gevonden</div>
         ) : (
           <div className="space-y-3">
             {filtered.map((product) => {
@@ -156,15 +159,15 @@ const DashboardPage = () => {
               const inkoop = firstVariant ? parseFloat(firstVariant.price.amount) : 0;
 
               return (
-                <div key={product.node.id} className={`bg-card border overflow-hidden transition-all ${!anyAvailable ? "opacity-50" : ""}`}>
+                <div key={product.node.id} className={`bg-white rounded-[10px] border border-[#e2e5ea] shadow-sm overflow-hidden transition-all ${!anyAvailable ? "opacity-50" : ""}`}>
                   {/* Collapsed product header */}
                   <div
-                    className="flex items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-muted/20 transition-colors"
+                    className="flex items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-[#f7f8fa] transition-colors"
                     onClick={() => toggleExpand(product.node.id)}
                   >
                     {/* Image - clickable for lightbox */}
                     <div
-                      className="w-12 h-12 bg-muted flex-shrink-0 overflow-hidden cursor-zoom-in"
+                      className="w-12 h-12 bg-[#f5f5f5] rounded-lg flex-shrink-0 overflow-hidden cursor-zoom-in"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (imageUrl) setLightboxImg({ url: imageUrl, alt: imageAlt });
@@ -174,7 +177,7 @@ const DashboardPage = () => {
                         <img src={imageUrl} alt={imageAlt} className="w-full h-full object-cover hover:scale-110 transition-transform" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-5 h-5 text-muted-foreground" />
+                          <Package className="w-5 h-5 text-[#ccc]" />
                         </div>
                       )}
                     </div>
@@ -182,12 +185,12 @@ const DashboardPage = () => {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-sm text-foreground truncate">{product.node.title}</h3>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-muted-foreground">{variants.length} {variants.length === 1 ? "variant" : "maten"}</span>
-                        <span className="text-xs text-muted-foreground">·</span>
-                        <span className="text-xs font-medium text-foreground">vanaf €{fmt(inkoop)}</span>
+                        <span className="text-xs text-[#888]">{variants.length} {variants.length === 1 ? "variant" : "maten"}</span>
+                        <span className="text-xs text-[#ccc]">·</span>
+                        <span className="text-xs font-medium text-primary">vanaf €{fmt(inkoop)}</span>
                         {!anyAvailable && (
                           <>
-                            <span className="text-xs text-muted-foreground">·</span>
+                            <span className="text-xs text-[#ccc]">·</span>
                             <span className="text-xs font-medium text-destructive">Uitverkocht</span>
                           </>
                         )}
@@ -195,28 +198,28 @@ const DashboardPage = () => {
                     </div>
 
                     {selectedCount > 0 && (
-                      <Badge variant="secondary" className="font-mono text-xs flex-shrink-0">
+                      <Badge className="bg-[#e8f0fe] text-primary border-0 font-mono text-xs flex-shrink-0">
                         {totalQty}× in {selectedCount} {selectedCount === 1 ? "maat" : "maten"}
                       </Badge>
                     )}
 
-                    <span className="text-muted-foreground flex-shrink-0">
+                    <span className="text-[#888] flex-shrink-0">
                       {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </span>
                   </div>
 
                   {/* Expanded size table */}
                   {isOpen && (
-                    <div className="border-t">
+                    <div className="border-t border-[#e2e5ea]">
                       <table className="w-full">
                         <thead>
-                          <tr className="bg-muted/30">
-                            <th className="text-left text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-5 py-2 w-[20%]">Maat</th>
-                            <th className="text-right text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-2">Inkoopprijs</th>
-                            <th className="text-right text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-2">Adviesprijs</th>
-                            <th className="text-right text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-2">Marge</th>
-                            <th className="text-center text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-2">Voorraad</th>
-                            <th className="text-center text-[10px] font-semibold text-muted-foreground text-uppercase-tracking px-4 py-2 w-[150px]">Aantal</th>
+                          <tr className="bg-[#f7f8fa]">
+                            <th className="text-left streim-label px-5 py-2.5 w-[20%]">Maat</th>
+                            <th className="text-right streim-label px-4 py-2.5">Inkoopprijs</th>
+                            <th className="text-right streim-label px-4 py-2.5">Adviesprijs</th>
+                            <th className="text-right streim-label px-4 py-2.5">Marge</th>
+                            <th className="text-center streim-label px-4 py-2.5">Voorraad</th>
+                            <th className="text-center streim-label px-4 py-2.5 w-[150px]">Aantal</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -234,12 +237,12 @@ const DashboardPage = () => {
                             return (
                               <tr
                                 key={v.id}
-                                className={`border-b last:border-b-0 transition-colors ${
-                                  isAvailable ? "hover:bg-muted/20" : "opacity-40 bg-muted/5"
-                                } ${qty > 0 ? "bg-primary/[0.03]" : ""}`}
+                                className={`border-b border-[#e8eaee] last:border-b-0 transition-colors ${
+                                  isAvailable ? "hover:bg-[#f7f8fa]" : "opacity-40 bg-[#fafafa]"
+                                } ${qty > 0 ? "bg-[#e8f0fe]" : ""}`}
                               >
                                 <td className="px-5 py-2.5">
-                                  <Badge variant={isAvailable ? "outline" : "secondary"} className="text-xs font-medium">
+                                  <Badge variant={isAvailable ? "outline" : "secondary"} className={`text-xs font-medium ${isAvailable ? "border-[#e2e5ea]" : ""}`}>
                                     {sizeLabel || v.title}
                                   </Badge>
                                 </td>
@@ -247,14 +250,14 @@ const DashboardPage = () => {
                                   <span className="text-sm font-semibold text-foreground">€{fmt(vInkoop)}</span>
                                 </td>
                                 <td className="px-4 py-2.5 text-right">
-                                  {verkoop ? <span className="text-sm text-muted-foreground">€{fmt(verkoop)}</span> : <span className="text-xs text-muted-foreground">—</span>}
+                                  {verkoop ? <span className="text-sm text-[#555]">€{fmt(verkoop)}</span> : <span className="text-xs text-[#888]">—</span>}
                                 </td>
                                 <td className="px-4 py-2.5 text-right">
                                   {marge !== null ? (
                                     <Badge variant="outline" className={`font-mono text-xs ${marge >= 40 ? "border-success/30 text-success" : marge >= 20 ? "border-warning/30 text-warning" : "border-destructive/30 text-destructive"}`}>
                                       {marge.toFixed(0)}%
                                     </Badge>
-                                  ) : <span className="text-xs text-muted-foreground">—</span>}
+                                  ) : <span className="text-xs text-[#888]">—</span>}
                                 </td>
                                 <td className="px-4 py-2.5 text-center">
                                   {!isAvailable ? (
@@ -268,7 +271,7 @@ const DashboardPage = () => {
                                 <td className="px-4 py-2.5">
                                   {isAvailable ? (
                                     <div className="flex items-center justify-center gap-1">
-                                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setQty(v.id, qty - 1, max)} disabled={qty === 0}>
+                                      <Button variant="outline" size="icon" className="h-7 w-7 rounded-md border-[#e2e5ea]" onClick={() => setQty(v.id, qty - 1, max)} disabled={qty === 0}>
                                         <Minus className="w-3 h-3" />
                                       </Button>
                                       <Input
@@ -277,13 +280,13 @@ const DashboardPage = () => {
                                         max={max}
                                         value={qty}
                                         onChange={(e) => setQty(v.id, parseInt(e.target.value) || 0, max)}
-                                        className="w-14 h-7 text-center text-sm font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        className="w-14 h-7 text-center text-sm font-mono rounded-md border-[#e2e5ea] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       />
-                                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setQty(v.id, qty + 1, max)} disabled={qty >= max}>
+                                      <Button variant="outline" size="icon" className="h-7 w-7 rounded-md border-[#e2e5ea]" onClick={() => setQty(v.id, qty + 1, max)} disabled={qty >= max}>
                                         <Plus className="w-3 h-3" />
                                       </Button>
                                     </div>
-                                  ) : <span className="text-xs text-muted-foreground text-center block">—</span>}
+                                  ) : <span className="text-xs text-[#888] text-center block">—</span>}
                                 </td>
                               </tr>
                             );
@@ -301,13 +304,13 @@ const DashboardPage = () => {
 
       {/* Floating action bar */}
       {selectedItems.length > 0 && (
-        <div className="border-t bg-card px-6 py-3 animate-fade-in">
+        <div className="border-t border-[#e2e5ea] bg-white px-6 py-3 animate-fade-in shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-[#888]">
               <span className="font-semibold text-foreground">{selectedItems.length}</span> variant(en) ·{" "}
               <span className="font-semibold text-foreground">{selectedItems.reduce((s, [, q]) => s + q, 0)}</span> stuks
             </p>
-            <Button onClick={handleAddToCart} className="wholesale-gradient border-0 text-primary-foreground" disabled={cartLoading}>
+            <Button onClick={handleAddToCart} className="wholesale-gradient border-0 text-white rounded-lg" disabled={cartLoading}>
               {cartLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ShoppingCart className="w-4 h-4 mr-2" />}
               Toevoegen aan winkelwagen
             </Button>
@@ -317,14 +320,14 @@ const DashboardPage = () => {
 
       {/* Image lightbox */}
       <Dialog open={!!lightboxImg} onOpenChange={() => setLightboxImg(null)}>
-        <DialogContent className="max-w-3xl p-0 bg-background border overflow-hidden">
+        <DialogContent className="max-w-3xl p-0 bg-white border border-[#e2e5ea] rounded-xl overflow-hidden">
           {lightboxImg && (
             <div className="relative">
               <img src={lightboxImg.url} alt={lightboxImg.alt} className="w-full h-auto max-h-[80vh] object-contain" />
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-2 right-2 bg-background/80 hover:bg-background"
+                className="absolute top-2 right-2 bg-white/80 hover:bg-white rounded-full"
                 onClick={() => setLightboxImg(null)}
               >
                 <X className="w-4 h-4" />

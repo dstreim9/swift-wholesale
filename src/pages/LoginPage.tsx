@@ -42,24 +42,27 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#f7f8fa] p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <h1 className="text-2xl font-bold tracking-widest uppercase text-foreground">STREIM</h1>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">Wholesale Portal</p>
+          <h1 className="text-2xl font-bold tracking-widest uppercase text-primary">STREIM</h1>
+          <p className="text-xs uppercase tracking-widest text-[#888] mt-1">Wholesale Portal</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="border border-border p-8 space-y-5">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-[#e2e5ea] shadow-sm p-8 space-y-5 relative overflow-hidden">
+          {/* Blue accent line at top */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-primary" />
+
           <div className="space-y-1.5">
-            <label className="text-xs font-medium uppercase tracking-wider text-foreground" htmlFor="email">E-mailadres</label>
+            <label className="streim-label" htmlFor="email">E-mailadres</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#888]" />
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-10 border-border"
+                className="pl-10 border-[#e2e5ea] rounded-lg"
                 placeholder="jouw@bedrijf.nl"
                 required
               />
@@ -67,15 +70,15 @@ const LoginPage = () => {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium uppercase tracking-wider text-foreground" htmlFor="password">Wachtwoord</label>
+            <label className="streim-label" htmlFor="password">Wachtwoord</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#888]" />
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 border-border"
+                className="pl-10 border-[#e2e5ea] rounded-lg"
                 placeholder="••••••••"
                 required
                 minLength={6}
@@ -83,14 +86,14 @@ const LoginPage = () => {
             </div>
           </div>
 
-          <Button type="submit" className="w-full wholesale-gradient border-0 uppercase tracking-widest text-xs h-11" disabled={loading}>
+          <Button type="submit" className="w-full wholesale-gradient border-0 uppercase tracking-widest text-xs h-11 rounded-lg" disabled={loading}>
             {loading ? "Bezig..." : isSignUp ? "Account aanmaken" : "Inloggen"}
           </Button>
 
           <button
             type="button"
             onClick={() => setIsSignUp(!isSignUp)}
-            className="w-full text-xs text-center text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider"
+            className="w-full text-xs text-center text-[#888] hover:text-primary transition-colors uppercase tracking-wider"
           >
             {isSignUp ? "Heb je al een account? Log in" : "Nog geen account? Registreer"}
           </button>

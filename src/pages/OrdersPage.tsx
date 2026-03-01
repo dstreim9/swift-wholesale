@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  pending: { label: "In afwachting", color: "bg-warning/10 text-warning", icon: Clock },
-  confirmed: { label: "Bevestigd", color: "bg-success/10 text-success", icon: CheckCircle },
-  shipped: { label: "Verzonden", color: "bg-primary/10 text-primary", icon: Truck },
-  delivered: { label: "Afgeleverd", color: "bg-success/10 text-success", icon: CheckCircle },
-  cancelled: { label: "Geannuleerd", color: "bg-destructive/10 text-destructive", icon: XCircle },
+  pending: { label: "In afwachting", color: "bg-orange-50 text-[#e65100]", icon: Clock },
+  confirmed: { label: "Bevestigd", color: "bg-[#f0faf0] text-success", icon: CheckCircle },
+  shipped: { label: "Verzonden", color: "bg-[#e8f0fe] text-primary", icon: Truck },
+  delivered: { label: "Afgeleverd", color: "bg-[#f0faf0] text-success", icon: CheckCircle },
+  cancelled: { label: "Geannuleerd", color: "bg-red-50 text-destructive", icon: XCircle },
 };
 
 const OrdersPage = () => {
@@ -48,21 +48,21 @@ const OrdersPage = () => {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <div className="border-b bg-card px-6 py-4">
-        <h1 className="text-xl font-bold text-foreground">Bestelgeschiedenis</h1>
-        <p className="text-sm text-muted-foreground">{orders.length} bestelling(en)</p>
+      <div className="bg-white border-b border-[#e2e5ea] px-6 py-4 shadow-sm">
+        <h1 className="text-xl font-bold text-primary tracking-wide">Bestelgeschiedenis</h1>
+        <p className="text-sm text-[#888]">{orders.length} bestelling(en)</p>
       </div>
 
       <div className="flex-1 overflow-auto px-6 py-4 space-y-3">
         {orders.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
+          <div className="text-center py-12 text-[#888]">
             <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p>Nog geen bestellingen</p>
           </div>
@@ -73,49 +73,49 @@ const OrdersPage = () => {
             const isExpanded = expandedOrder === order.id;
 
             return (
-              <div key={order.id} className="bg-card rounded-lg border overflow-hidden">
+              <div key={order.id} className="bg-white rounded-[10px] border border-[#e2e5ea] shadow-sm overflow-hidden">
                 <button
                   onClick={() => toggleOrder(order.id)}
-                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors text-left"
+                  className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-[#f7f8fa] transition-colors text-left"
                 >
                   <div className="flex items-center gap-4">
                     <div>
                       <p className="text-sm font-semibold text-foreground">Order #{order.order_number}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-[#888]">
                         {new Date(order.created_at).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-foreground">€{parseFloat(order.total_price).toFixed(2)}</span>
-                    <Badge className={`${status.color} border-0 gap-1`}>
+                    <span className="text-sm font-bold text-primary">€{parseFloat(order.total_price).toFixed(2)}</span>
+                    <Badge className={`${status.color} border-0 gap-1 rounded-md font-semibold text-[11px]`}>
                       <StatusIcon className="w-3 h-3" />
                       {status.label}
                     </Badge>
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-[#888]" /> : <ChevronDown className="w-4 h-4 text-[#888]" />}
                   </div>
                 </button>
 
                 {isExpanded && (
-                  <div className="border-t px-4 py-3 space-y-2 animate-fade-in">
+                  <div className="border-t border-[#e2e5ea] bg-[#f7f8fa] px-5 py-4 space-y-2 animate-fade-in">
                     {orderItems[order.id]?.map((item) => (
-                      <div key={item.id} className="flex items-center gap-3 py-2">
+                      <div key={item.id} className="flex items-center gap-3 py-2 px-3 bg-white rounded-lg border border-[#e8eaee]">
                         {item.image_url && (
-                          <img src={item.image_url} alt={item.product_title} className="w-10 h-10 rounded object-cover bg-muted" />
+                          <img src={item.image_url} alt={item.product_title} className="w-10 h-10 rounded-lg object-cover bg-[#f5f5f5]" />
                         )}
                         <div className="flex-1">
                           <p className="text-sm font-medium text-foreground">{item.product_title}</p>
                           {item.variant_title && item.variant_title !== "Default Title" && (
-                            <p className="text-xs text-muted-foreground">{item.variant_title}</p>
+                            <p className="text-xs text-[#888]">{item.variant_title}</p>
                           )}
                         </div>
-                        <span className="text-sm text-muted-foreground">{item.quantity}x</span>
-                        <span className="text-sm font-medium text-foreground">€{parseFloat(item.total_price).toFixed(2)}</span>
+                        <span className="text-sm text-[#888]">{item.quantity}x</span>
+                        <span className="text-sm font-semibold text-primary">€{parseFloat(item.total_price).toFixed(2)}</span>
                       </div>
                     ))}
                     {order.notes && (
-                      <div className="pt-2 border-t">
-                        <p className="text-xs text-muted-foreground">Opmerkingen: {order.notes}</p>
+                      <div className="pt-2 border-t border-[#e8eaee]">
+                        <p className="text-xs text-[#888]">Opmerkingen: {order.notes}</p>
                       </div>
                     )}
                   </div>

@@ -19,10 +19,10 @@ const DashboardLayout = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <header className="h-14 border-b border-border bg-background flex items-center justify-between px-6 shrink-0">
+    <div className="min-h-screen flex flex-col bg-[#f7f8fa]">
+      <header className="h-14 bg-white border-b-[2.5px] border-primary flex items-center justify-between px-6 shrink-0 shadow-sm">
         <div className="flex items-center gap-6">
-          <span className="text-sm font-bold tracking-widest uppercase text-foreground">STREIM</span>
+          <span className="text-sm font-bold tracking-widest uppercase text-primary">STREIM</span>
 
           <nav className="flex items-center gap-1">
             {navItems.map(({ to, label, icon: Icon }) => (
@@ -31,7 +31,9 @@ const DashboardLayout = () => {
                 to={to}
                 className={({ isActive }) =>
                   `flex items-center gap-1.5 px-3 py-1.5 text-xs uppercase tracking-wider transition-colors ${
-                    isActive ? "text-foreground font-semibold border-b-2 border-foreground" : "text-muted-foreground hover:text-foreground"
+                    isActive
+                      ? "text-primary font-semibold border-b-2 border-primary"
+                      : "text-[#888] hover:text-foreground"
                   }`
                 }
               >
@@ -44,7 +46,7 @@ const DashboardLayout = () => {
 
         <div className="flex items-center gap-3">
           <CartPanel />
-          <Button variant="ghost" size="icon" onClick={signOut}>
+          <Button variant="ghost" size="icon" onClick={signOut} className="text-[#888] hover:text-foreground">
             <LogOut className="w-4 h-4" />
           </Button>
         </div>

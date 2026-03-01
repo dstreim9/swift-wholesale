@@ -85,59 +85,60 @@ const CartPanel = () => {
   return (
     <>
       {/* Trigger button in header */}
-      <Button variant="outline" className="relative" onClick={() => setIsOpen(true)}>
-        <Package className="w-4 h-4 mr-2" />
+      <Button variant="outline" className="relative border-[#e2e5ea] rounded-lg hover:bg-[#f7f8fa]" onClick={() => setIsOpen(true)}>
+        <Package className="w-4 h-4 mr-2 text-primary" />
         Winkelwagen
         {totalItems() > 0 && (
-          <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center animate-cart-bounce">
+          <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center animate-cart-bounce">
             {totalItems()}
           </span>
         )}
       </Button>
 
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetContent className="w-full sm:max-w-md flex flex-col h-full p-0">
-          <SheetHeader className="px-6 py-4 border-b">
+        <SheetContent className="w-full sm:max-w-md flex flex-col h-full p-0 border-l border-[#e2e5ea]">
+          <SheetHeader className="px-6 py-4 border-b-[2.5px] border-primary bg-white">
             <SheetTitle className="flex items-center gap-2">
               <Package className="w-5 h-5 text-primary" />
-              Winkelwagen ({items.length})
+              <span className="text-primary">Winkelwagen</span>
+              <span className="text-[#888] font-normal">({items.length})</span>
             </SheetTitle>
           </SheetHeader>
 
           {/* Items */}
-          <div className="flex-1 overflow-auto px-6 py-4 space-y-3">
+          <div className="flex-1 overflow-auto px-6 py-4 space-y-3 bg-[#f7f8fa]">
             {items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+              <div className="flex flex-col items-center justify-center h-full text-[#888]">
                 <Package className="w-12 h-12 mb-3 opacity-30" />
                 <p className="text-sm">Je winkelwagen is leeg</p>
               </div>
             ) : (
               items.map((item) => (
-                <div key={item.variantId} className="flex items-center gap-3 p-3 rounded-lg border bg-background">
+                <div key={item.variantId} className="flex items-center gap-3 p-3 rounded-[10px] border border-[#e2e5ea] bg-white shadow-sm">
                   {item.product.node.images.edges[0]?.node && (
                     <img
                       src={item.product.node.images.edges[0].node.url}
                       alt={item.product.node.title}
-                      className="w-12 h-12 rounded-md object-cover bg-muted"
+                      className="w-12 h-12 rounded-lg object-cover bg-[#f5f5f5]"
                     />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.product.node.title}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-[#888]">
                       {item.price.currencyCode} {parseFloat(item.price.amount).toFixed(2)} per stuk
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQuantity(item.variantId, item.quantity - 1)}>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-md border-[#e2e5ea]" onClick={() => updateQuantity(item.variantId, item.quantity - 1)}>
                       <Minus className="w-3 h-3" />
                     </Button>
                     <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQuantity(item.variantId, item.quantity + 1)}>
+                    <Button variant="outline" size="icon" className="h-7 w-7 rounded-md border-[#e2e5ea]" onClick={() => updateQuantity(item.variantId, item.quantity + 1)}>
                       <Plus className="w-3 h-3" />
                     </Button>
                   </div>
                   <div className="text-right ml-2">
-                    <p className="text-sm font-semibold text-foreground">
+                    <p className="text-sm font-semibold text-primary">
                       {item.price.currencyCode} {(parseFloat(item.price.amount) * item.quantity).toFixed(2)}
                     </p>
                     <button onClick={() => removeItem(item.variantId)} className="text-destructive hover:text-destructive/80 transition-colors">
@@ -151,21 +152,21 @@ const CartPanel = () => {
 
           {/* Footer */}
           {items.length > 0 && (
-            <div className="border-t px-6 py-4 space-y-3">
+            <div className="border-t border-[#e2e5ea] px-6 py-4 space-y-3 bg-white">
               <Textarea
                 placeholder="Opmerkingen bij je bestelling..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="text-sm"
+                className="text-sm border-[#e2e5ea] rounded-lg"
                 rows={2}
               />
 
               {!meetsMinimum && (
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
-                  <AlertTriangle className="w-4 h-4 text-warning mt-0.5 shrink-0" />
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-[#fff3e0] border border-[#e65100]/20">
+                  <AlertTriangle className="w-4 h-4 text-[#e65100] mt-0.5 shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-foreground">Minimale bestelwaarde niet bereikt</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-[#888]">
                       Nog €{(MINIMUM_ORDER_VALUE - total).toFixed(2)} nodig (minimum €{MINIMUM_ORDER_VALUE.toFixed(2)})
                     </p>
                   </div>
@@ -173,16 +174,16 @@ const CartPanel = () => {
               )}
 
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Totaal</span>
-                <span className="text-xl font-bold text-foreground">€{total.toFixed(2)}</span>
+                <span className="text-sm text-[#888]">Totaal</span>
+                <span className="text-xl font-bold text-primary">€{total.toFixed(2)}</span>
               </div>
 
-              <Button className="w-full wholesale-gradient border-0" disabled={!meetsMinimum || placing || isLoading} onClick={handlePlaceOrder}>
+              <Button className="w-full wholesale-gradient border-0 rounded-lg" disabled={!meetsMinimum || placing || isLoading} onClick={handlePlaceOrder}>
                 {placing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Plaats Bestelling
               </Button>
 
-              <Button variant="ghost" className="w-full text-sm" onClick={clearCart}>
+              <Button variant="ghost" className="w-full text-sm text-[#888] hover:text-foreground" onClick={clearCart}>
                 Winkelwagen legen
               </Button>
             </div>

@@ -69,11 +69,14 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         "brand-red": "hsl(var(--brand-red))",
+        "streim-blue": "#1a5fb4",
+        "streim-blue-light": "#e8f0fe",
+        "streim-gray": "#f7f8fa",
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius))",
-        sm: "calc(var(--radius))",
+        lg: "10px",
+        md: "8px",
+        sm: "4px",
       },
       keyframes: {
         "accordion-down": {
